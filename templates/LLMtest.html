@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>議事録生成テスト</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
+        textarea { width: 100%; height: 200px; }
+        .result { margin-top: 20px; background: #f4f4f4; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>議事録生成テスト</h1>
+    <form method="post">
+        <textarea name="text" placeholder="ここに会議の内容を入力してください">{{ input_text }}</textarea>
+        <br>
+        <input type="submit" value="議事録を生成">
+    </form>
+    {% if minutes %}
+        <div class="result">
+            <h2>生成された議事録:</h2>
+            <pre>{{ minutes }}</pre>
+        </div>
+    {% endif %}
+</body>
+</html>

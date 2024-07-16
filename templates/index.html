@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIScriber</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #50e3c2;
+            --background-color: #f5f7fa;
+            --text-color: #333;
+            --card-background: #ffffff;
+            --accent-color: #ff6b6b;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.1'%3E%3Cpath opacity='.5' d='M96 95h4v1h-4v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9zm-1 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9z'/%3E%3Cpath d='M6 5V0H5v5H0v1h5v94h1V6h94V5H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            background-color: var(--card-background);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .progress-bar {
+            background-color: var(--primary-color);
+            transition: width 0.5s ease;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .rotate {
+            animation: rotate 2s linear infinite;
+        }
+
+        .ripple {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ripple:after {
+            content: "";
+            display: block;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            background-image: radial-gradient(circle, #fff 10%, transparent 10.01%);
+            background-repeat: no-repeat;
+            background-position: 50%;
+            transform: scale(10, 10);
+            opacity: 0;
+            transition: transform .5s, opacity 1s;
+        }
+
+        .ripple:active:after {
+            transform: scale(0, 0);
+            opacity: .3;
+            transition: 0s;
+        }
+
+        .dropzone {
+            border: 2px dashed var(--primary-color);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .dropzone.dragover {
+            background-color: rgba(74, 144, 226, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            .card {
+                margin-bottom: 20px;
+            }
+        }
+
+        #tableOfContents {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: var(--card-background);
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            max-width: 250px;
+            z-index: 1000;
+        }
+
+        #tableOfContents ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        #tableOfContents li {
+            margin-bottom: 5px;
+        }
+
+        #tableOfContents a {
+            color: var(--text-color);
+            text-decoration: none;
+        }
+
+        #tableOfContents a:hover {
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 id="音声文字起こし-議事録生成アプリ" class="text-center mb-4 pulse">
+            <i class="fas fa-microphone-alt me-2"></i>AIScriber
+        </h1>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <form id="upload-form" enctype="multipart/form-data">
+                    <div id="drop-area" class="mb-3 dropzone">
+                        <div id="file-upload-icon">
+                            <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
+                        </div>
+                        <div id="file-upload-text">
+                            ファイルをドラッグ&ドロップするか、クリックしてファイルを選択
+                        </div>
+                        <div id="selected-file" style="display: none;">
+                            選択されたファイル: <span id="file-name"></span>
+                        </div>
+                        <input type="file" class="form-control" id="file" name="file" accept=".mp3,.wav,.mp4" style="display: none;">
+                    </div>
+                    <button type="submit" class="btn btn-primary ripple" data-bs-toggle="tooltip" data-bs-placement="top" title="クリックしてアップロードと処理を開始">
+                        <i class="fas fa-upload me-2"></i>アップロード & 処理開始
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div id="upload-progress-container" class="mb-4" style="display: none;">
+            <div class="progress">
+                <div id="upload-progress-bar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+            </div>
+        </div>
+
+        <div id="transcription-progress-container" class="mb-4" style="display: none;">
+            <div class="progress">
+                <div id="transcription-progress-bar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+            </div>
+        </div>
+
+        <div id="status-message" class="alert alert-info" role="alert" style="display: none;"></div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="fas fa-file-alt me-2"></i>生成された議事録</h2>
+            </div>
+            <div class="card-body">
+                <div id="minutes"></div>
+                <div class="mt-3">
+                    <a id="download-text" href="/download/text" class="btn btn-primary me-2" style="display: none;" data-bs-toggle="tooltip" data-bs-placement="top" title="テキストファイルとしてダウンロード">
+                        <i class="fas fa-file-download me-2"></i>テキストファイル
+                    </a>
+                    <a id="download-markdown" href="/download/markdown" class="btn btn-secondary" style="display: none;" data-bs-toggle="tooltip" data-bs-placement="top" title="マークダウンファイルとしてダウンロード">
+                        <i class="fas fa-file-code me-2"></i>マークダウンファイル
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <button id="regenerate-minutes" class="btn btn-secondary mb-4 ripple" style="display: none;" data-bs-toggle="tooltip" data-bs-placement="top" title="議事録を再生成">
+            <i class="fas fa-sync-alt me-2"></i>議事録を再生成
+        </button>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="fas fa-language me-2"></i>文字起こし結果</h2>
+            </div>
+            <div class="card-body">
+                <div id="transcription"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tableOfContents" style="display: none;">
+        <h3><i class="fas fa-list me-2"></i>目次</h3>
+        <ul id="tocList"></ul>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const form = document.getElementById('upload-form');
+        const fileInput = document.getElementById('file');
+        const dropArea = document.getElementById('drop-area');
+        const fileUploadIcon = document.getElementById('file-upload-icon');
+        const fileUploadText = document.getElementById('file-upload-text');
+        const selectedFile = document.getElementById('selected-file');
+        const fileName = document.getElementById('file-name');
+        const uploadProgressContainer = document.getElementById('upload-progress-container');
+        const uploadProgressBar = document.getElementById('upload-progress-bar');
+        const transcriptionProgressContainer = document.getElementById('transcription-progress-container');
+        const transcriptionProgressBar = document.getElementById('transcription-progress-bar');
+        const statusMessage = document.getElementById('status-message');
+        const transcriptionDiv = document.getElementById('transcription');
+        const minutesDiv = document.getElementById('minutes');
+        const regenerateButton = document.getElementById('regenerate-minutes');
+        const downloadTextButton = document.getElementById('download-text');
+        const downloadMarkdownButton = document.getElementById('download-markdown');
+        const tableOfContents = document.getElementById('tableOfContents');
+        const tocList = document.getElementById('tocList');
+
+        function updateFileInfo(file) {
+            if (file) {
+                fileUploadIcon.innerHTML = '<i class="fas fa-file-audio fa-3x mb-3"></i>';
+                fileUploadText.style.display = 'none';
+                selectedFile.style.display = 'block';
+                fileName.textContent = file.name;
+            } else {
+                fileUploadIcon.innerHTML = '<i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>';
+                fileUploadText.style.display = 'block';
+                selectedFile.style.display = 'none';
+            }
+        }
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            dropArea.classList.add('dragover');
+        }
+
+        function unhighlight(e) {
+            dropArea.classList.remove('dragover');
+        }
+
+        dropArea.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            fileInput.files = files;
+            updateFileInfo(files[0]);
+        }
+
+        fileInput.addEventListener('change', function(e) {
+            updateFileInfo(this.files[0]);
+        });
+
+        dropArea.addEventListener('click', () => fileInput.click());
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const xhr = new XMLHttpRequest();
+
+            xhr.open('POST', '/', true);
+            xhr.upload.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    updateProgressBar(uploadProgressBar, percentComplete);
+                    uploadProgressContainer.style.display = 'block';
+                }
+            };
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    const response = JSON.parse(xhr.responseText);
+                    transcriptionDiv.innerText = response.transcription;
+                    minutesDiv.innerHTML = response.minutes_html;
+                    statusMessage.innerText = '処理が完了しました';
+                    statusMessage.style.display = 'block';
+                    regenerateButton.style.display = 'block';
+                    downloadTextButton.style.display = 'inline-block';
+                    downloadMarkdownButton.style.display = 'inline-block';
+                    uploadProgressContainer.style.display = 'none';
+                    transcriptionProgressContainer.style.display = 'none';
+                    createTableOfContents();
+                } else {
+                    statusMessage.innerText = 'エラーが発生しました';
+                    statusMessage.style.display = 'block';
+                }
+            };
+
+            xhr.send(formData);
+
+            statusMessage.innerText = 'ファイルをアップロード中...';
+            statusMessage.style.display = 'block';
+        });
+
+        socket.on('transcription_progress', function(data) {
+            updateProgressBar(transcriptionProgressBar, data.progress);
+            transcriptionProgressContainer.style.display = 'block';
+        });
+
+        socket.on('status_update', function(data) {
+            statusMessage.innerText = data.status;
+            if (data.status === '音声認識を開始します...') {
+                uploadProgressContainer.style.display = 'none';
+                transcriptionProgressContainer.style.display = 'block';
+            }
+        });
+
+        regenerateButton.addEventListener('click', function() {
+            const transcription = transcriptionDiv.innerText;
+            const xhr = new XMLHttpRequest();
+
+            xhr.open('POST', '/regenerate_minutes', true);
+            xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    const response = JSON.parse(xhr.responseText);
+                    minutesDiv.innerHTML = response.minutes_html;
+                    statusMessage.innerText = '議事録が再生成されました';
+                    statusMessage.style.display = 'block';
+                    createTableOfContents();
+                } else {
+                    statusMessage.innerText = '議事録の再生成中にエラーが発生しました';
+                    statusMessage.style.display = 'block';
+                }
+            };
+
+            xhr.send(JSON.stringify({transcription: transcription}));
+            statusMessage.innerText = '議事録を再生成中...';
+            statusMessage.style.display = 'block';
+        });
+
+        function updateProgressBar(progressBar, progress) {
+            progress = Math.min(Math.max(progress, 0), 100);
+            progressBar.style.width = progress + '%';
+            progressBar.textContent = progress.toFixed(2) + '%';
+            progressBar.setAttribute('aria-valuenow', progress);
+        }
+
+        function showCompletionIcon() {
+            completionIcon.style.display = 'block';
+            setTimeout(() => {
+                completionIcon.style.display = 'none';
+            }, 2000);
+        }
+
+        function createTableOfContents() {
+            const headers = minutesDiv.querySelectorAll('h1, h2, h3, h4, h5, h6');
+            tocList.innerHTML = '';
+            if (headers.length > 0) {
+                headers.forEach((header, index) => {
+                    const li = document.createElement('li');
+                    const a = document.createElement('a');
+                    a.textContent = header.textContent;
+                    a.href = `#header-${index}`;
+                    header.id = `header-${index}`;
+                    li.appendChild(a);
+                    tocList.appendChild(li);
+                });
+                tableOfContents.style.display = 'block';
+            } else {
+                tableOfContents.style.display = 'none';
+            }
+        }
+
+        // スムーズスクロール
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // ツールチップの初期化
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+    </script>
+</body>
+</html>
