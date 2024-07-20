@@ -4,7 +4,7 @@ pydub
 Werkzeug
 anthropic
 python-dotenv
-Flask-Markdown==2.0.1
+Flask-Markdown==0.3
 flask-socketio
 Flask-Limiter
 openai==0.28
