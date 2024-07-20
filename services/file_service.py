@@ -3,6 +3,7 @@
 import re
 from io import BytesIO
 from flask import send_file
+from logger import app_logger
 
 def generate_filename(content, prefix='minutes'):
     """
@@ -15,6 +16,7 @@ def generate_filename(content, prefix='minutes'):
     Returns:
         str: 生成されたファイル名
     """
+    app_logger.info(f"Generating filename with prefix: {prefix}")
     # 最初の見出しを取得
     title_match = re.search(r'^#\s*(.+)$', content, re.MULTILINE)
     if title_match:
@@ -26,7 +28,9 @@ def generate_filename(content, prefix='minutes'):
     filename = re.sub(r'[^\w\s-]', '', title.lower())
     filename = re.sub(r'[-\s]+', '_', filename)
     
-    return f"{prefix}_{filename[:50]}"
+    final_filename = f"{prefix}_{filename[:50]}"
+    app_logger.debug(f"Generated filename: {final_filename}")
+    return final_filename
 
 def format_content(content):
     """
@@ -38,6 +42,7 @@ def format_content(content):
     Returns:
         str: フォーマットされた内容
     """
+    app_logger.info("Formatting content")
     # 行間に空行を追加
     formatted_content = re.sub(r'\n(?!\n)', '\n\n', content)
     return formatted_content
@@ -54,6 +59,7 @@ def prepare_download_file(minutes, file_type):
         tuple: (ファイル名, ファイルコンテンツ, MIMEタイプ)
         または None（無効なファイルタイプの場合）
     """
+    app_logger.info(f"Preparing download file of type: {file_type}")
     if file_type == 'text':
         filename = generate_filename(minutes, 'minutes_text') + '.txt'
         content = re.sub(r'#+ ', '', minutes)  # 見出しの '#' を削除
@@ -64,8 +70,10 @@ def prepare_download_file(minutes, file_type):
         content = format_content(minutes)
         mimetype = 'text/markdown'
     else:
+        app_logger.warning(f"Invalid file type requested: {file_type}")
         return None
 
+    app_logger.debug(f"Prepared file: {filename}")
     return filename, content, mimetype
 
 def create_download_file(filename, content, mimetype):
@@ -80,6 +88,7 @@ def create_download_file(filename, content, mimetype):
     Returns:
         flask.send_file: ダウンロード可能なファイルオブジェクト
     """
+    app_logger.info(f"Creating download file: {filename}")
     return send_file(
         BytesIO(content.encode('utf-8')),
         mimetype=mimetype,
