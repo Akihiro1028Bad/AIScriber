@@ -1,22 +1,21 @@
 import os
-from anthropic import Anthropic
-from dotenv import load_dotenv
+import google.generativeai as genai
 
-# .envファイルの内容を読み込む
-load_dotenv()
-
-# Anthropic APIキーの設定（環境変数から取得）
-anthropic = Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
-
-def generate_minutes(text):
-    """入力されたテキストからマークダウン形式の議事録を生成する関数"""
+def gemini_generate_minutes(text):
+    """入力されたテキストから Gemini API を使用してマークダウン形式の議事録を生成する関数"""
     try:
-        response = anthropic.messages.create(
-            model="claude-3-5-sonnet-20240620",
-            max_tokens=4000,
-            temperature=0.7,
-            messages=[
-                {"role": "user", "content": f"""プロの議事録作成者として、以下の会議内容から詳細かつ構造化された議事録を**日本語で**作成してください。以下の点に特に注意を払ってください：
+        # API キーを環境変数から取得
+        api_key = os.environ.get("GOOGLE_API_KEY")
+        if not api_key:
+            raise ValueError("GOOGLE_API_KEY が設定されていません。")
+
+        # Gemini API の設定
+        genai.configure(api_key=api_key)
+
+        # モデルの設定
+        model = genai.GenerativeModel('gemini-pro')
+
+        prompt = f"""プロの議事録作成者として、以下の会議内容から詳細かつ構造化された議事録を**日本語で**作成してください。以下の点に特に注意を払ってください：
 
 1. 各議題項目とサブトピックについて、できるだけ詳細に記述してください。議論の内容、提案、提起された懸念事項を深く説明してください。
 
@@ -60,12 +59,24 @@ def generate_minutes(text):
 
 以下の会議内容に基づいて、上記の指示に従って包括的で詳細な議事録をマークダウン形式で作成してください。議事録は会議で使用された言語で作成してください。
 
-{text}"""}
-            ],
-        )
-        # Markdown形式のテキストをそのまま返す
-        markdown_minutes = response.content[0].text
-        return markdown_minutes
+{text}"""
+
+        # テキスト生成の実行
+        response = model.generate_content(prompt)
+
+        return response.text
+
     except Exception as e:
-        print(f"エラーが発生しました: {str(e)}")
+        print(f"エラーが発生しました: {e}")
         return "議事録の生成中にエラーが発生しました。"
+
+# スクリプトが直接実行された場合のサンプル使用例
+if __name__ == "__main__":
+    # サンプルの会議テキスト（実際の使用時はこれを実際の会議内容に置き換えてください）
+    meeting_text = """
+    ここに実際の会議の議事録やメモを入力してください。
+    """
+    # 議事録を生成
+    minutes = gemini_generate_minutes(meeting_text)
+    # 生成された議事録を表示
+    print(minutes)

@@ -1,11 +1,14 @@
 # services/upload_service.py
 
 import os
+import uuid
 from werkzeug.utils import secure_filename
 from flask import session, render_template_string
 from services.audio_service import convert_to_wav
 from services.transcription_service import transcribe_audio
 from services.minutes_service import generate_minutes
+from services.openai_miniutes_service import openai_generate_minutes
+from services.gemni_miniutes_service import gemini_generate_minutes
 
 def process_upload(file, upload_folder, allowed_extensions, socketio):
     """
@@ -30,24 +33,36 @@ def process_upload(file, upload_folder, allowed_extensions, socketio):
         return None, None, '許可されていないファイル形式です'
 
     try:
-        # ファイルの保存
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(upload_folder, filename)
+        # ユニークなファイル名を生成
+        unique_filename = str(uuid.uuid4()) + '_' + secure_filename(file.filename)
+        filepath = os.path.join(upload_folder, unique_filename)
         file.save(filepath)
 
         # 音声ファイルの変換
         socketio.emit('status_update', {'status': 'ファイルを変換中...'})
-        wav_file = convert_to_wav(filepath)
+        wav_file = convert_to_wav(filepath, upload_folder)
 
         # 音声認識
         socketio.emit('status_update', {'status': '音声認識を開始します...'})
         def progress_callback(progress):
             socketio.emit('transcription_progress', {'progress': progress})
-        transcription = transcribe_audio(wav_file, progress_callback)
+        transcription = transcribe_audio(wav_file, upload_folder, progress_callback)
 
-        # 議事録の生成
-        socketio.emit('status_update', {'status': '議事録を生成中...'})
-        minutes = generate_minutes(transcription)
+        # 議事録の生成 (Gemini, OpenAI, Claude の順に試行)
+        for generate_func, api_name in [
+            (gemini_generate_minutes, "Gemini API"), 
+            (openai_generate_minutes, "ChatGPT API"), 
+            (generate_minutes, "Claude API")
+        ]:
+            socketio.emit('status_update', {'status': f'{api_name} を使用して議事録を生成中...'})
+            minutes = generate_func(transcription)
+            if minutes and minutes != "議事録の生成中にエラーが発生しました。":
+                # 議事録生成成功
+                socketio.emit('api_used', {'api_name': api_name}) # 使用したAPI名を送信
+                break
+        else:
+            # 全てのツールで失敗
+            raise Exception("全ての議事録生成ツールでエラーが発生しました。")
 
         # セッションに議事録を保存
         session['minutes'] = minutes

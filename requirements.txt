@@ -1,8 +1,14 @@
 Flask==2.3.2
 SpeechRecognition==3.10.0
-pydub==1.10.2
+pydub==0.25.1
 Werkzeug==2.3.3
 anthropic==0.3.0
 python-dotenv==1.0.0
 Flask-Markdown==0.3
 flask-socketio==5.1.1
+Flask-Limiter==1.7
+openai==0.28
+google-cloud-aiplatform
+pydantic
+google-generativeai
+gunicorn

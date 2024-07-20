@@ -23,6 +23,9 @@ class Config:
     
     # Anthropic APIキー
     ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
+    
+    # Google API Key
+    GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 
 def create_app(config_class=Config):
     """
