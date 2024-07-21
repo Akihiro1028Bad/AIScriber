@@ -1,14 +1,14 @@
-# services/upload_service.py
-
 import os
 import uuid
 from werkzeug.utils import secure_filename
 from flask import session, render_template_string
-from services.audio_service import convert_to_wav
 from services.transcription_service import transcribe_audio
 from services.minutes_service import generate_minutes
 from services.openai_miniutes_service import openai_generate_minutes
 from services.gemni_miniutes_service import gemini_generate_minutes
+import logging
+
+logger = logging.getLogger(__name__)
 
 def process_upload(file, upload_folder, allowed_extensions, socketio):
     """
@@ -38,17 +38,15 @@ def process_upload(file, upload_folder, allowed_extensions, socketio):
         filepath = os.path.join(upload_folder, unique_filename)
         file.save(filepath)
 
-        # 音声ファイルの変換
-        socketio.emit('status_update', {'status': 'ファイルを変換中...'})
-        wav_file = convert_to_wav(filepath, upload_folder)
-
-        # 音声認識
         socketio.emit('status_update', {'status': '音声認識を開始します...'})
+        
         def progress_callback(progress):
             socketio.emit('transcription_progress', {'progress': progress})
-        transcription = transcribe_audio(wav_file, upload_folder, progress_callback)
+        
+        transcription = transcribe_audio(filepath, progress_callback)
 
         # 議事録の生成 (Gemini, OpenAI, Claude の順に試行)
+        minutes = None
         for generate_func, api_name in [
             (gemini_generate_minutes, "Gemini API"), 
             (openai_generate_minutes, "ChatGPT API"), 
@@ -57,12 +55,14 @@ def process_upload(file, upload_folder, allowed_extensions, socketio):
             socketio.emit('status_update', {'status': f'{api_name} を使用して議事録を生成中...'})
             minutes = generate_func(transcription)
             if minutes and minutes != "議事録の生成中にエラーが発生しました。":
-                # 議事録生成成功
-                socketio.emit('api_used', {'api_name': api_name}) # 使用したAPI名を送信
+                socketio.emit('api_used', {'api_name': api_name})
                 break
-        else:
-            # 全てのツールで失敗
+        
+        if not minutes:
             raise Exception("全ての議事録生成ツールでエラーが発生しました。")
+
+        # メモリを節約するため、大きな変数を早めに解放
+        del transcription
 
         # セッションに議事録を保存
         session['minutes'] = minutes
@@ -70,15 +70,13 @@ def process_upload(file, upload_folder, allowed_extensions, socketio):
 
         # 一時ファイルの削除
         os.remove(filepath)
-        os.remove(wav_file)
 
         socketio.emit('status_update', {'status': '処理が完了しました'})
-        return transcription, minutes_html, None
+        return None, minutes_html, None
 
     except Exception as e:
-        error_message = f"ファイル処理中にエラーが発生しました: {str(e)}"
-        print(error_message)
-        return None, None, error_message
+        logger.error(f"ファイル処理中にエラーが発生しました: {str(e)}", exc_info=True)
+        return None, None, f"ファイル処理中にエラーが発生しました: {str(e)}"
 
 def allowed_file(filename, allowed_extensions):
     """

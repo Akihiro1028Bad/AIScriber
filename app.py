@@ -3,37 +3,64 @@ from gevent import monkey
 monkey.patch_all()
 
 import os
+import psutil
+from flask import Flask, request, jsonify
 from flask_socketio import SocketIO
-from config import create_app
+from config import Config
 from routes import register_routes
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from logger import app_logger
+from logger import setup_logger
 
-app_logger.info("Starting application")
+# アプリケーションロガーの設定
+app_logger = setup_logger('app_logger', 'logs/app.log')
 
-# アプリケーションの作成
-app = create_app()
+def create_app(config_class=Config):
+    app = Flask(__name__)
+    app.config.from_object(config_class)
+    
+    # Limiterの設定
+    limiter = Limiter(
+        get_remote_address,
+        app=app,
+        default_limits=["200 per day", "50 per hour"],
+        storage_uri=os.getenv('REDIS_URL', 'redis://localhost:6379')
+    )
+    
+    # Socket.IOの初期化
+    socketio = SocketIO(app)
+    
+    # ルートの登録
+    register_routes(app, socketio)
+    
+    # メモリ使用量チェック
+    def check_memory_usage():
+        memory_percent = psutil.virtual_memory().percent
+        if memory_percent > 90:  # メモリ使用率が90%を超えた場合
+            raise Exception("サーバーのメモリ使用率が高すぎます。後でもう一度お試しください。")
 
-# Redis URLの設定
-redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379')
-app_logger.info(f"Redis URL: {redis_url}")
+    @app.before_request
+    def before_request():
+        check_memory_usage()
 
-# Flask-Limiterの設定
-limiter = Limiter(
-    get_remote_address,
-    app=app,
-    storage_uri=redis_url
-)
-app_logger.info("Flask-Limiter configured")
+    # グローバルなエラーハンドラー
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        app_logger.error(f"Unhandled exception: {str(e)}", exc_info=True)
+        return jsonify(error=str(e)), 500
 
-# Socket.IOの初期化
-socketio = SocketIO(app)
-app_logger.info("SocketIO initialized")
+    # Socket.IOイベントハンドラ
+    @socketio.on('connect')
+    def handle_connect():
+        app_logger.info("Client connected")
 
-# ルートの登録
-register_routes(app, socketio)
-app_logger.info("Routes registered")
+    @socketio.on('disconnect')
+    def handle_disconnect():
+        app_logger.info("Client disconnected")
+
+    return app, socketio
+
+app, socketio = create_app()
 
 if __name__ == '__main__':
     port = int(os.getenv("PORT", 5000))

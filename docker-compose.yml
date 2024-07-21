@@ -21,3 +21,7 @@ services:
     image: redis:alpine
     ports:
       - "6379:6379"
+    deploy:
+      resources:
+        limits:
+          memory: 256M  # Redisのメモリ制限を256MBに設定
