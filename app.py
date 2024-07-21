@@ -4,6 +4,8 @@ monkey.patch_all()
 
 import os
 import psutil
+import signal
+import sys
 from flask import Flask, request, jsonify
 from flask_socketio import SocketIO
 from config import Config
@@ -11,6 +13,14 @@ from routes import register_routes
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from logger import app_logger
+
+def signal_handler(sig, frame):
+    app_logger.info('Shutting down gracefully...')
+    # ここに必要なクリーンアップ処理を追加
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
 
 def create_app(config_class=Config):
     app = Flask(__name__)
