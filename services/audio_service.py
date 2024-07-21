@@ -1,92 +1,116 @@
-# app.py
-from gevent import monkey
-monkey.patch_all()
+# services/audio_service.py
 
 import os
+import subprocess
 import psutil
-import signal
-import sys
-from flask import Flask, request, jsonify
-from flask_socketio import SocketIO
-from config import Config
-from routes import register_routes
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
+from pydub import AudioSegment
 from logger import app_logger
 
-def signal_handler(sig, frame):
-    app_logger.info('Shutting down gracefully...')
-    # ここに必要なクリーンアップ処理を追加
-    sys.exit(0)
-
-signal.signal(signal.SIGINT, signal_handler)
-signal.signal(signal.SIGTERM, signal_handler)
-
-def create_app(config_class=Config):
-    app = Flask(__name__)
-    app.config.from_object(config_class)
+def convert_to_wav(input_file, output_dir):
+    app_logger.info(f"Converting audio file to WAV: {input_file}")
+    name, ext = os.path.splitext(os.path.basename(input_file))
+    output_file = os.path.join(output_dir, f"{name}.wav")
     
-    app_logger.debug(f"ANTHROPIC_API_KEY set: {'ANTHROPIC_API_KEY' in os.environ}")
-    app_logger.debug(f"GOOGLE_API_KEY set: {'GOOGLE_API_KEY' in os.environ}")
-    app_logger.debug(f"OPENAI_API_KEY set: {'OPENAI_API_KEY' in os.environ}")
-    
-    upload_dir = app.config['UPLOAD_FOLDER']
-    if os.access(upload_dir, os.W_OK):
-        app_logger.debug(f"Upload directory is writable: {upload_dir}")
-    else:
-        app_logger.error(f"Upload directory is not writable: {upload_dir}")
-    
-    # Limiterの設定 (インメモリストレージを使用)
-    limiter = Limiter(
-        get_remote_address,
-        app=app,
-        default_limits=["200 per day", "50 per hour"],
-        storage_uri="memory://"
-    )
-    
-    # Socket.IOの初期化
-    socketio = SocketIO(app)
-    
-    # ルートの登録
-    register_routes(app, socketio)
-    
-    # メモリ使用量チェック
-    def check_memory_usage():
-        memory_percent = psutil.virtual_memory().percent
-        if memory_percent > 90:  # メモリ使用率が90%を超えた場合
-            app_logger.warning(f"High memory usage: {memory_percent}%")
-            raise Exception("サーバーのメモリ使用率が高すぎます。後でもう一度お試しください。")
-
-    @app.before_request
-    def before_request():
-        check_memory_usage()
-
-    # グローバルなエラーハンドラー
-    @app.errorhandler(Exception)
-    def handle_exception(e):
-        app_logger.error(f"Unhandled exception: {str(e)}", exc_info=True)
-        return jsonify(error=str(e)), 500
-
-    # Socket.IOイベントハンドラ
-    @socketio.on('connect')
-    def handle_connect():
-        app_logger.info("Client connected")
-
-    @socketio.on('disconnect')
-    def handle_disconnect():
-        app_logger.info("Client disconnected")
-
-    return app, socketio
-
-app, socketio = create_app()
-
-if __name__ == '__main__':
-    port = int(os.getenv("PORT", 5000))
-    app_logger.info(f"Starting server on port {port}")
-    from gevent import pywsgi
-    from geventwebsocket.handler import WebSocketHandler
-    server = pywsgi.WSGIServer(('0.0.0.0', port), app, handler_class=WebSocketHandler)
     try:
-        server.serve_forever()
+        # ファイルの存在確認
+        if not os.path.exists(input_file):
+            raise FileNotFoundError(f"Input file not found: {input_file}")
+
+        # ffmpegコマンドの構築
+        command = [
+            'ffmpeg',
+            '-i', input_file,
+            '-acodec', 'pcm_s16le',
+            '-ac', '2',
+            '-ar', '44100',
+            '-y',
+            '-bufsize', '10M',  # バッファサイズを10MBに設定
+            output_file
+        ]
+        
+        # ffmpegの実行
+        app_logger.debug(f"Executing ffmpeg command: {' '.join(command)}")
+        result = subprocess.run(command, capture_output=True, text=True)
+        
+        if result.returncode != 0:
+            app_logger.error(f"ffmpeg error: {result.stderr}")
+            raise Exception(f"ffmpeg command failed: {result.stderr}")
+        
+        # 出力ファイルの存在確認
+        if not os.path.exists(output_file):
+            raise FileNotFoundError(f"Output file was not created: {output_file}")
+
+        # 出力ファイルのサイズ確認
+        file_size = os.path.getsize(output_file)
+        app_logger.info(f"Converted file size: {file_size} bytes")
+        if file_size == 0:
+            raise Exception("Converted file is empty")
+
+        # 変換されたファイルの検証
+        try:
+            audio = AudioSegment.from_wav(output_file)
+            app_logger.info(f"Successfully loaded converted file. Duration: {len(audio) / 1000} seconds")
+        except Exception as e:
+            app_logger.error(f"Failed to validate converted WAV file: {str(e)}")
+            raise Exception(f"WAV file validation failed: {str(e)}")
+        
+        # メモリ使用量をログに記録
+        process = psutil.Process(os.getpid())
+        memory_info = process.memory_info()
+        app_logger.info(f"Memory usage after conversion: {memory_info.rss / 1024 / 1024:.2f} MB")
+        
+        app_logger.info(f"Audio file converted and validated successfully: {output_file}")
+        return output_file
+    
     except Exception as e:
-        app_logger.error(f"Server error: {str(e)}", exc_info=True)
+        app_logger.error(f"Error in convert_to_wav: {str(e)}", exc_info=True)
+        raise
+
+def split_audio(audio_file, output_dir, segment_length=60):
+    app_logger.info(f"Splitting audio file: {audio_file}")
+    segments = []
+    try:
+        # ファイルの存在確認
+        if not os.path.exists(audio_file):
+            raise FileNotFoundError(f"Audio file not found: {audio_file}")
+
+        audio = AudioSegment.from_wav(audio_file)
+        duration = len(audio)
+        app_logger.info(f"Total audio duration: {duration / 1000} seconds")
+
+        for i in range(0, duration, segment_length * 1000):
+            segment = audio[i:i + segment_length * 1000]
+            segment_file = os.path.join(output_dir, f"segment_{i // (segment_length * 1000)}.wav")
+            segment.export(segment_file, format="wav")
+            
+            # セグメントファイルの検証
+            if not os.path.exists(segment_file):
+                raise FileNotFoundError(f"Segment file was not created: {segment_file}")
+            
+            file_size = os.path.getsize(segment_file)
+            if file_size == 0:
+                raise Exception(f"Segment file is empty: {segment_file}")
+
+            segments.append(segment_file)
+            app_logger.debug(f"Created segment: {segment_file}, size: {file_size} bytes")
+        
+        app_logger.info(f"Audio file split into {len(segments)} segments")
+    except Exception as e:
+        app_logger.error(f"Error splitting audio file: {str(e)}", exc_info=True)
+        raise
+    
+    return segments
+
+# テスト用のコード
+if __name__ == "__main__":
+    test_audio_file = "path/to/test/audio/file.mp3"
+    test_output_dir = "path/to/test/output/directory"
+    
+    try:
+        wav_file = convert_to_wav(test_audio_file, test_output_dir)
+        print(f"Converted file: {wav_file}")
+        
+        segments = split_audio(wav_file, test_output_dir)
+        print(f"Created segments: {segments}")
+    except Exception as e:
+        print(f"Error during test: {str(e)}")
