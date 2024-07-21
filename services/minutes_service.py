@@ -42,7 +42,7 @@ FORMATTING_INSTRUCTIONS = """
 議事録の冒頭には、基本的な会議情報（日付、時間、場所、参加者、議題など）を含めてください。
 """
 
-def openai_generate_minutes(text):
+def generate_minutes(text):
     """入力されたテキストから OpenAI API を使用してマークダウン形式の議事録を生成する関数"""
     start_time = time.time()
     start_memory = get_memory_usage()
@@ -103,6 +103,6 @@ if __name__ == "__main__":
     ここに実際の会議の議事録やメモを入力してください。
     """
     # 議事録を生成
-    minutes = openai_generate_minutes(meeting_text)
+    minutes = generate_minutes(meeting_text)
     # 生成された議事録を表示
     print(minutes)
