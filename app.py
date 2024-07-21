@@ -10,29 +10,18 @@ from config import Config
 from routes import register_routes
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from logger import setup_logger
-
-# アプリケーションロガーの設定
-app_logger = setup_logger('app_logger', 'logs/app.log')
+from logger import app_logger
 
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
     
-    # Redis URLを環境変数から取得
-    redis_url = os.getenv('REDIS_URL')
-    if not redis_url:
-        app_logger.warning("REDIS_URL environment variable is not set. Using in-memory storage for rate limiting.")
-        redis_url = "memory://"
-        # ここで適切なフォールバック処理を行うか、エラーを発生させます
-        # 例: raise ValueError("REDIS_URL environment variable is not set")
-    
-    # Limiterの設定
+    # Limiterの設定 (インメモリストレージを使用)
     limiter = Limiter(
         get_remote_address,
         app=app,
         default_limits=["200 per day", "50 per hour"],
-        storage_uri=redis_url
+        storage_uri="memory://"
     )
     
     # Socket.IOの初期化
@@ -45,6 +34,7 @@ def create_app(config_class=Config):
     def check_memory_usage():
         memory_percent = psutil.virtual_memory().percent
         if memory_percent > 90:  # メモリ使用率が90%を超えた場合
+            app_logger.warning(f"High memory usage: {memory_percent}%")
             raise Exception("サーバーのメモリ使用率が高すぎます。後でもう一度お試しください。")
 
     @app.before_request

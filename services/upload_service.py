@@ -1,3 +1,5 @@
+# upload_service.py
+
 import os
 import uuid
 from werkzeug.utils import secure_filename
@@ -10,6 +12,7 @@ from services.gemni_miniutes_service import gemini_generate_minutes
 from logger import app_logger
 
 def process_upload(file, upload_folder, allowed_extensions, socketio):
+    app_logger.info(f"Starting file processing: {file.filename}")
     if not file or file.filename == '':
         return None, None, 'ファイルが選択されていません'
 
@@ -20,11 +23,14 @@ def process_upload(file, upload_folder, allowed_extensions, socketio):
         unique_filename = str(uuid.uuid4()) + '_' + secure_filename(file.filename)
         filepath = os.path.join(upload_folder, unique_filename)
         file.save(filepath)
+        app_logger.info(f"File saved: {filepath}")
 
         socketio.emit('status_update', {'status': 'ファイルを変換中...'})
         try:
             wav_file = convert_to_wav(filepath, upload_folder)
+            app_logger.info(f"File converted to WAV: {wav_file}")
         except Exception as e:
+            app_logger.error(f"Error converting file to WAV: {str(e)}", exc_info=True)
             return None, None, f"音声ファイルの変換中にエラーが発生しました: {str(e)}"
 
         socketio.emit('status_update', {'status': '音声認識を開始します...'})
@@ -33,7 +39,9 @@ def process_upload(file, upload_folder, allowed_extensions, socketio):
         
         try:
             transcription = transcribe_audio(wav_file, progress_callback)
+            app_logger.info("Transcription completed")
         except Exception as e:
+            app_logger.error(f"Error during transcription: {str(e)}", exc_info=True)
             return None, None, f"音声認識中にエラーが発生しました: {str(e)}"
 
         for generate_func, api_name in [
