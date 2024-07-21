@@ -21,7 +21,7 @@ class Config:
     UPLOAD_FOLDER = 'uploads'
     
     # アップロードを許可するファイルの拡張子
-    ALLOWED_EXTENSIONS = {'mp4', 'wav', 'mp3'}
+    ALLOWED_EXTENSIONS = {'mp4', 'wav', 'mp3', 'mov'}
     
     # Anthropic APIキー
     ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
