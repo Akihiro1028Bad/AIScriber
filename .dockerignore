@@ -1,6 +1,10 @@
+# .dockerignore
+
+# バージョン管理システムのディレクトリ
 .git
 .gitignore
-.env
+
+# Python関連
 __pycache__
 *.pyc
 *.pyo
@@ -20,5 +24,22 @@ coverage.xml
 .mypy_cache
 .pytest_cache
 .hypothesis
+
+# 仮想環境
+venv
+*.venv
+env/
+venv/
+ENV/
+
+# IDEの設定ファイル
+.vscode
+.idea
+
+# OS生成ファイル
+.DS_Store
+Thumbs.db
+
+# アプリケーション固有
 uploads/*
 logs/*
