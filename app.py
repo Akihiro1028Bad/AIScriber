@@ -22,7 +22,8 @@ def create_app(config_class=Config):
     # Redis URLを環境変数から取得
     redis_url = os.getenv('REDIS_URL')
     if not redis_url:
-        app_logger.error("REDIS_URL environment variable is not set")
+        app_logger.warning("REDIS_URL environment variable is not set. Using in-memory storage for rate limiting.")
+        redis_url = "memory://"
         # ここで適切なフォールバック処理を行うか、エラーを発生させます
         # 例: raise ValueError("REDIS_URL environment variable is not set")
     

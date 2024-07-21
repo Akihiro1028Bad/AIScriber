@@ -7,54 +7,19 @@ import logging
 import psutil
 import time
 
-# ロガーの設定
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-# ファイルハンドラ
-file_handler = logging.FileHandler('transcription_service.log')
-file_handler.setLevel(logging.DEBUG)
-
-# コンソールハンドラ
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.INFO)
-
-# フォーマッタ
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-file_handler.setFormatter(formatter)
-console_handler.setFormatter(formatter)
-
-# ハンドラをロガーに追加
-logger.addHandler(file_handler)
-logger.addHandler(console_handler)
 
 def get_memory_usage():
-    """現在のメモリ使用量を取得"""
     process = psutil.Process(os.getpid())
-    return process.memory_info().rss / 1024 / 1024  # MB単位
+    return process.memory_info().rss / 1024 / 1024
 
 def transcribe_segment(segment_info, recognizer, progress_callback, total_segments, processed_segments, audio_file):
-    """
-    単一の音声セグメントを文字起こしする関数
-
-    Args:
-        segment_info (tuple): (インデックス, 開始時間, 継続時間)のタプル
-        recognizer (speech_recognition.Recognizer): 音声認識器のインスタンス
-        progress_callback (function): 進捗状況を更新するためのコールバック関数
-        total_segments (int): 全セグメント数
-        processed_segments (list): 処理済みセグメントを追跡するリスト
-        audio_file (str): 音声ファイルのパス
-
-    Returns:
-        tuple: (インデックス, 文字起こしされたテキスト)
-    """
     index, start_time, duration = segment_info
     logger.debug(f"開始: セグメント {index} の処理")
     start_process_time = time.time()
     start_memory = get_memory_usage()
 
     try:
-        # AudioSegmentを使用してメモリ上で直接セグメントを処理
         audio = AudioSegment.from_wav(audio_file)[start_time:start_time+duration]
         audio_data = audio.raw_data
         sample_rate = audio.frame_rate
@@ -79,21 +44,17 @@ def transcribe_segment(segment_info, recognizer, progress_callback, total_segmen
                      f"メモリ使用量変化: {end_memory - start_memory:.2f}MB")
 
 def transcribe_audio(audio_file, progress_callback):
-    """
-    音声ファイルをテキストに変換する関数（並行処理版）
-
-    Args:
-        audio_file (str): 変換する音声ファイルのパス
-        progress_callback (function): 進捗状況を更新するためのコールバック関数
-
-    Returns:
-        str: 文字起こしされたテキスト全体（正しい順序で結合）
-    """
     logger.info(f"音声ファイル {audio_file} の文字起こしを開始します")
     start_time = time.time()
     start_memory = get_memory_usage()
 
     try:
+        if not os.path.exists(audio_file):
+            raise FileNotFoundError(f"Audio file not found: {audio_file}")
+        
+        file_size = os.path.getsize(audio_file)
+        logger.info(f"Audio file size: {file_size} bytes")
+        
         audio = AudioSegment.from_wav(audio_file)
         total_duration = len(audio)
         segment_duration = 60000  # 60秒
@@ -138,7 +99,6 @@ def transcribe_audio(audio_file, progress_callback):
         raise
 
 if __name__ == "__main__":
-    # テスト用のコード
     def dummy_progress_callback(progress):
         print(f"進捗: {progress:.2f}%")
 
