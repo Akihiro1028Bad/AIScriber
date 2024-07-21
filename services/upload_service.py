@@ -12,7 +12,7 @@ from services.gemni_miniutes_service import gemini_generate_minutes
 from logger import app_logger
 
 def process_upload(file, upload_folder, allowed_extensions, socketio):
-    app_logger.info(f"Starting file processing: {file.filename}")
+    app_logger.debug(f"Received file: {file.filename}, Size: {file.content_length} bytes, Content-Type: {file.content_type}")
     if not file or file.filename == '':
         return None, None, 'ファイルが選択されていません'
 
@@ -60,8 +60,8 @@ def process_upload(file, upload_folder, allowed_extensions, socketio):
         session['minutes'] = minutes
         minutes_html = render_template_string("{{ minutes|markdown }}", minutes=minutes)
 
-        os.remove(filepath)
-        os.remove(wav_file)
+        # os.remove(filepath)
+        # os.remove(wav_file)
 
         socketio.emit('status_update', {'status': '処理が完了しました'})
         return transcription, minutes_html, None

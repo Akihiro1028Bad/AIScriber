@@ -16,6 +16,16 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
     
+    app_logger.debug(f"ANTHROPIC_API_KEY set: {'ANTHROPIC_API_KEY' in os.environ}")
+    app_logger.debug(f"GOOGLE_API_KEY set: {'GOOGLE_API_KEY' in os.environ}")
+    app_logger.debug(f"OPENAI_API_KEY set: {'OPENAI_API_KEY' in os.environ}")
+    
+    upload_dir = app.config['UPLOAD_FOLDER']
+    if os.access(upload_dir, os.W_OK):
+        app_logger.debug(f"Upload directory is writable: {upload_dir}")
+    else:
+        app_logger.error(f"Upload directory is not writable: {upload_dir}")
+    
     # Limiterの設定 (インメモリストレージを使用)
     limiter = Limiter(
         get_remote_address,
