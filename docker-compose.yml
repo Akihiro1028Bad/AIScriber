@@ -13,7 +13,6 @@ services:
     volumes:
       - ./uploads:/app/uploads
       - ./logs:/app/logs
-    restart: always  # コンテナが停止した場合に自動的に再起動
 
 volumes:
   uploads:
