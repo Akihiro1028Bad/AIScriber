@@ -20,13 +20,13 @@ def convert_to_wav(input_file, output_dir):
     output_file = os.path.join(output_dir, f"{name}.wav")
     
     try:
-        # MP4ファイルの場合は特別な処理が必要
-        if ext.lower() == '.mp4':
-            app_logger.debug("Processing MP4 file")
+        # MP4またはMOVファイルの場合は特別な処理が必要
+        if ext.lower() in ['.mp4', '.mov']:
+            app_logger.info(f"Processing {ext.upper()} file")
             audio = AudioSegment.from_file(input_file, format="mp4")
         else:
             # その他の形式の場合は自動で形式を判断
-            app_logger.debug(f"Processing audio file with extension: {ext}")
+            app_logger.info(f"Processing audio file with extension: {ext}")
             audio = AudioSegment.from_file(input_file)
         
         # WAV形式でエクスポート
